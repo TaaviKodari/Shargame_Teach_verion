@@ -23,11 +23,27 @@ public class Bullet : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(!GameManager.Instance.IsGamePlay())
+        {
+            return;
+        }
+
         transform.Translate(Vector2.up * -1 * currentSpeed * Time.deltaTime);
 
         lifeTimer -= Time.deltaTime;
         if(lifeTimer <= 0)
         {
+            BulletPoolManager.Instance.ReturnBullet(gameObject);
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+       IDamageable damageable = collision.GetComponent<IDamageable>();
+
+        if(damageable != null)
+        {
+            damageable.TakeDamage(1);
             BulletPoolManager.Instance.ReturnBullet(gameObject);
         }
     }

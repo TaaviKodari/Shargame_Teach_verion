@@ -23,6 +23,11 @@ public class PlayerController : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
     }
 
+    private void Start()
+    {
+        GameManager.Instance.playerController = this;
+    }
+
     private void OnEnable()
     {
         controls.Enable();
@@ -36,6 +41,11 @@ public class PlayerController : MonoBehaviour
     #region Movement calls
     private void FixedUpdate()
     {
+        if (CheckGameState() == false)
+        {
+            return;
+        }
+
         Move();
     }
 
@@ -49,15 +59,24 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        Shoot();
+       if(CheckGameState() == false)
+       {
+            return;
+       }
 
-        if(UsingMouse())
+        Shoot();
+        Aim();
+    }
+
+    private bool CheckGameState()
+    {
+        if(GameManager.Instance.IsGamePlay())
         {
-            AimWithMouse();
+            return true;
         }
         else
         {
-            AimWithControllerOrKeyboard();
+            return false;
         }
     }
 
@@ -81,34 +100,24 @@ public class PlayerController : MonoBehaviour
         return false;
     }
 
-    private void AimWithMouse()
+    private void Aim()
     {
-
         aimInput = controls.Player.Aim.ReadValue<Vector2>();
-
-        if(aimInput.sqrMagnitude > 0.1)
+        if (aimInput.sqrMagnitude > 0.1)
         {
-            Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
-            mouseWorldPosition.z = 0;
-
-            Vector2 aimDirection = (mouseWorldPosition - gunTransform.position).normalized;
-
-            aimDirection.y = -aimDirection.y;
-
-            float angle = (Mathf.Atan2(aimDirection.x, aimDirection.y)) * Mathf.Rad2Deg;
-
+            Vector2 aimDirection;
+            if (UsingMouse())
+            {
+                Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+                mousePosition.z = 0;
+                aimDirection = mousePosition - gunTransform.position;
+            }
+            else
+            {
+                aimDirection = aimInput;
+            }
+            float angle = (Mathf.Atan2(aimDirection.x, -aimDirection.y)) * Mathf.Rad2Deg;
             gunTransform.rotation = Quaternion.Euler(0, 0, angle);
-        }
-    }
-
-    private void AimWithControllerOrKeyboard()
-    {
-        Vector2 controllerAim = controls.Player.Aim.ReadValue<Vector2>();
-
-        if(controllerAim.sqrMagnitude > 0.1)
-        {
-            float angle = Mathf.Atan2( controllerAim.x, -controllerAim.y) * Mathf.Rad2Deg;
-            gunTransform.rotation = Quaternion.Euler(0,0,angle);
         }
     }
 
